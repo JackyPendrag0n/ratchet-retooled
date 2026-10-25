@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=TOD Recomp
+Comment=Static recompilation of Ratchet & Clank Future: Tools of Destruction (bring your own game)
+Exec=AppRun
+Icon=tod-recomp
+Categories=Game;
+Terminal=false

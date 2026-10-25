@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ratchet Retooled</title>
+<meta name="description" content="A native PC port of Ratchet & Clank Future: Tools of Destruction for Windows and Linux, made by static recompilation. Bring your own disc.">
+<meta property="og:title" content="Ratchet Retooled">
+<meta property="og:description" content="Tools of Destruction, natively on PC: up to 4x resolution, high frame rates, split-screen co-op. Bring your own disc.">
+<meta property="og:image" content="https://jackypendrag0n.github.io/ratchet-retooled/assets/kerwan.jpg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@600;800&family=Inter:wght@400;500;600&family=JetBrains+Mono&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0b0f1a;
+  --panel: #131a2b;
+  --panel-2: #1a2338;
+  --line: #26314d;
+  --text: #e6eaf3;
+  --muted: #9aa5c0;
+  --accent: #f5a623;
+  --accent-2: #3fb6ff;
+  --code: #0f1524;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 16px/1.6 Inter, system-ui, sans-serif;
+}
+a { color: var(--accent-2); text-decoration: none; }
+a:hover { text-decoration: underline; }
+img { max-width: 100%; display: block; }
+.wrap { max-width: 1100px; margin: 0 auto; padding: 0 16px; }
+
+nav {
+  position: sticky; top: 0; z-index: 10;
+  background: rgba(11, 15, 26, .85); backdrop-filter: blur(8px);
+  border-bottom: 1px solid var(--line);
+}
+nav .wrap { display: flex; align-items: center; gap: 24px; height: 56px; }
+nav .brand { font: 800 18px "Exo 2", sans-serif; color: var(--text); letter-spacing: .02em; }
+nav .brand span { color: var(--accent); }
+nav .links { margin-left: auto; display: flex; gap: 20px; font-size: 14px; }
+nav .links a { color: var(--muted); }
+nav .links a:hover { color: var(--text); text-decoration: none; }
+
+.hero { position: relative; min-height: 78vh; display: flex; align-items: flex-end; overflow: hidden; }
+.hero img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.hero::after {
+  content: ""; position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(11,15,26,0) 30%, rgba(11,15,26,.75) 70%, var(--bg) 100%);
+}
+.hero .wrap { position: relative; z-index: 1; padding-bottom: 56px; }
+.hero h1 {
+  font: 800 clamp(40px, 7vw, 76px)/1 "Exo 2", sans-serif; margin: 0 0 12px;
+  text-shadow: 0 4px 24px rgba(0,0,0,.6);
+}
+.hero h1 span { color: var(--accent); }
+.hero p { font-size: clamp(17px, 2.2vw, 21px); max-width: 640px; margin: 0 0 24px; color: #d5dbea; text-shadow: 0 2px 12px rgba(0,0,0,.8); }
+.btns { display: flex; flex-wrap: wrap; gap: 12px; }
+.btn {
+  display: inline-block; padding: 12px 22px; border-radius: 10px; font-weight: 600;
+  background: var(--accent); color: #1b1300;
+}
+.btn.ghost { background: rgba(255,255,255,.08); color: var(--text); border: 1px solid rgba(255,255,255,.2); }
+.btn:hover { text-decoration: none; filter: brightness(1.08); }
+
+section { padding: 72px 0; }
+h2 { font: 800 clamp(28px, 4vw, 38px)/1.1 "Exo 2", sans-serif; margin: 0 0 12px; }
+.lede { color: var(--muted); max-width: 720px; margin: 0 0 36px; }
+
+.notice {
+  border: 1px solid #5a4313; background: #2a2010; color: #f3dfb4;
+  border-radius: 12px; padding: 16px 20px; margin-top: 8px;
+}
+.notice b { color: var(--accent); }
+
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 20px; }
+.card h3 { font: 600 17px "Exo 2", sans-serif; margin: 0 0 6px; color: var(--accent); }
+.card p { margin: 0; color: var(--muted); font-size: 15px; }
+.tag { font-size: 11px; text-transform: uppercase; letter-spacing: .08em; color: var(--accent-2); margin-left: 6px; }
+
+.shots { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+.shots figure { margin: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 14px; overflow: hidden; }
+.shots img { width: 100%; aspect-ratio: 16 / 9; object-fit: cover; cursor: zoom-in; transition: transform .3s; }
+.shots figure:hover img { transform: scale(1.02); }
+.shots figcaption { padding: 12px 16px; color: var(--muted); font-size: 14px; }
+
+.steps { counter-reset: step; display: grid; gap: 16px; }
+.step { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 24px; }
+.step h3 { font: 600 20px "Exo 2", sans-serif; margin: 0 0 8px; }
+.step h3::before {
+  counter-increment: step; content: counter(step);
+  display: inline-grid; place-items: center; width: 30px; height: 30px; margin-right: 10px;
+  border-radius: 50%; background: var(--accent); color: #1b1300; font-size: 16px;
+}
+.step p, .step li { color: #c7cee0; }
+.step ol, .step ul { padding-left: 20px; }
+
+.tabs { display: flex; gap: 8px; margin: 12px 0 0; }
+.tab {
+  font: 600 14px Inter, sans-serif; padding: 8px 16px; border-radius: 8px; cursor: pointer;
+  border: 1px solid var(--line); background: var(--panel-2); color: var(--muted);
+}
+.tab[aria-selected="true"] { background: var(--accent); color: #1b1300; border-color: var(--accent); }
+.pane[hidden] { display: none; }
+
+pre {
+  background: var(--code); border: 1px solid var(--line); border-radius: 10px;
+  padding: 14px 16px; overflow-x: auto; font: 13.5px/1.55 "JetBrains Mono", ui-monospace, monospace; color: #d6def0;
+}
+code { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .92em; }
+p code, li code, td code { background: var(--code); border: 1px solid var(--line); border-radius: 5px; padding: 1px 5px; }
+.c { color: #6f7c9b; }
+
+table { width: 100%; border-collapse: collapse; font-size: 15px; }
+th, td { text-align: left; padding: 9px 12px; border-bottom: 1px solid var(--line); }
+th { color: var(--muted); font-weight: 500; }
+.two { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+.steps > *, .two > *, .grid > *, .shots > * { min-width: 0; }
+.tablewrap { overflow-x: auto; }
+
+footer { border-top: 1px solid var(--line); padding: 32px 0 48px; color: var(--muted); font-size: 14px; }
+
+.lightbox {
+  position: fixed; inset: 0; background: rgba(0,0,0,.9); display: none;
+  align-items: center; justify-content: center; z-index: 50; padding: 16px; cursor: zoom-out;
+}
+.lightbox.open { display: flex; }
+.lightbox img { max-height: 92vh; border-radius: 8px; }
+
+@media (max-width: 760px) {
+  nav .links { display: none; }
+  .shots, .two { grid-template-columns: 1fr; }
+  section { padding: 52px 0; }
+  .hero { min-height: 64vh; }
+}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="wrap">
+    <a class="brand" href="#">Ratchet <span>Retooled</span></a>
+    <div class="links">
+      <a href="#features">Features</a>
+      <a href="#screens">Screenshots</a>
+      <a href="#install">Install</a>
+      <a href="#play">Playing</a>
+      <a href="https://github.com/JackyPendrag0n/ratchet-retooled">GitHub</a>
+    </div>
+  </div>
+</nav>
+
+<header class="hero">
+  <img src="assets/kerwan.jpg" alt="Ratchet on Kerwan, rendered by Ratchet Retooled at 2x resolution">
+  <div class="wrap">
+    <h1>Ratchet <span>Retooled</span></h1>
+    <p>Tools of Destruction, running natively on Windows and Linux. Sharper, smoother, and now with a second player.</p>
+    <div class="btns">
+      <a class="btn" href="#install">How to install</a>
+      <a class="btn ghost" href="https://github.com/JackyPendrag0n/ratchet-retooled">Source on GitHub</a>
+    </div>
+  </div>
+</header>
+
+<main>
+<section>
+  <div class="wrap">
+    <h2>A recompilation, not an emulator</h2>
+    <p class="lede">Ratchet Retooled translates the PS3 game's PowerPC and SPU code into C++ ahead of time and compiles
+      it into an ordinary PC program. A small runtime stands in for the PS3's system libraries, and a Vulkan renderer
+      draws what the PS3's graphics chip would have. No emulator, no JIT.</p>
+    <div class="notice"><b>Bring your own disc.</b> This project contains no game code or game files. You need your
+      own copy of <i>Ratchet &amp; Clank Future: Tools of Destruction</i> (North America, BCUS98127, v1.00), dumped
+      from your own disc. The build turns your copy into C++ on your own computer.</div>
+  </div>
+</section>
+
+<section id="features" style="padding-top:0">
+  <div class="wrap">
+    <h2>Features</h2>
+    <p class="lede">Everything the PS3 version has, plus the things a PC should have.</p>
+    <div class="grid">
+      <div class="card"><h3>Windows &amp; Linux</h3><p>Native x86-64 builds with Vulkan 1.3. Keyboard or any SDL2 gamepad, with rumble.</p></div>
+      <div class="card"><h3>Up to 4x resolution</h3><p>Supersampling from 1280x720 up to 5120x2880, FXAA, 16x anisotropic filtering and soft shadows.</p></div>
+      <div class="card"><h3>High frame rate</h3><p>30 fps like the PS3, the game's own 60 fps mode, or any cap up to 240. Uncapped too.</p></div>
+      <div class="card"><h3>Ultrawide</h3><p>16:9, 21:9 and 32:9 aspect ratios.</p></div>
+      <div class="card"><h3>Split-screen co-op<span class="tag">experimental</span></h3><p>A second Ratchet on a second controller. Shared weapons, bolts and XP; D-pad Down teleports to your partner.</p></div>
+      <div class="card"><h3>Cheat &amp; debug menu</h3><p>God mode, infinite ammo, every weapon and upgrade, level warp, no clip, free camera, photo mode, slow motion, practice tools.</p></div>
+      <div class="card"><h3>Weapon XP</h3><p>The weapons page shows each weapon's exact XP and what its next level needs.</p></div>
+      <div class="card"><h3>Saves</h3><p>Normal in-game saves, stored as plain folders. Same layout as RPCS3, so you can bring your saves along.</p></div>
+      <div class="card"><h3>Mods</h3><p>Dump and replace textures, override any game file from a mods folder, export models to Blender.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="screens" style="padding-top:0">
+  <div class="wrap">
+    <h2>Screenshots</h2>
+    <p class="lede">Click a screenshot to see it full size.</p>
+    <div class="shots">
+      <figure><img src="assets/kerwan.jpg" alt="Kerwan at 2x resolution" loading="lazy"><figcaption>Kerwan, 2x supersampling</figcaption></figure>
+      <figure><img src="assets/plaza.jpg" alt="Kerwan plaza with soft shadows" loading="lazy"><figcaption>Soft shadows</figcaption></figure>
+      <figure><img src="assets/coop.jpg" alt="Two-player split-screen co-op" loading="lazy"><figcaption>Two-player split-screen co-op</figcaption></figure>
+      <figure><img src="assets/weapon-xp.jpg" alt="The weapons page showing XP: 700 / 1,000" loading="lazy"><figcaption>Weapon XP on the weapons page</figcaption></figure>
+    </div>
+  </div>
+</section>
+
+<section id="install" style="padding-top:0">
+  <div class="wrap">
+    <h2>Install</h2>
+    <p class="lede">There are no ready-made downloads: a built program contains the game's own code, so everyone builds
+      their own from their own copy. Three steps, about 15 minutes, most of it waiting for the compiler.</p>
+
+    <div class="steps">
+      <div class="step">
+        <h3>Dump your game</h3>
+        <ol>
+          <li><b>The game folder.</b> Dump your disc with a PS3 running custom firmware (multiMAN, webMAN MOD,
+            IRISMAN), or with a compatible Blu-ray drive and
+            <a href="https://github.com/13xforever/ps3-disc-dumper">ps3-disc-dumper</a>. You get a folder with
+            <code>PS3_GAME</code> inside. A decrypted ISO of your disc works too: extract it with 7-Zip.</li>
+          <li><b>A decrypted <code>EBOOT.elf</code>.</b> In <a href="https://rpcs3.net">RPCS3</a>, choose
+            <i>Utilities &gt; Decrypt PS3 Binaries</i>, pick <code>PS3_GAME/USRDIR/EBOOT.BIN</code>, and save the
+            result as <code>EBOOT.elf</code> in the same folder.</li>
+        </ol>
+        <p>It must be the v1.00 disc EBOOT, not an update: 10,923,400 bytes, SHA-256
+          <code style="word-break:break-all">0ee9a8414c8fc182bc19fa2a523e6d050d0be76138b3733ae515798d77d2468c</code>.</p>
+<pre>My TOD folder/
+  PS3_GAME/
+    USRDIR/
+      EBOOT.BIN
+      EBOOT.elf      <span class="c">&lt;- you made this</span>
+      packed/ ...</pre>
+      </div>
+
+      <div class="step">
+        <h3>Build</h3>
+        <div class="tabs" role="tablist">
+          <button class="tab" role="tab" aria-selected="true" data-pane="win">Windows</button>
+          <button class="tab" role="tab" aria-selected="false" data-pane="linux">Linux</button>
+        </div>
+
+        <div class="pane" id="win">
+          <p>Install <a href="https://www.msys2.org">MSYS2</a> (default folder <code>C:\msys64</code>), then open
+            <b>MSYS2 UCRT64</b> from the Start menu and run:</p>
+<pre><span class="c"># tools and libraries</span>
+pacman -S --needed git python mingw-w64-ucrt-x86_64-gcc mingw-w64-ucrt-x86_64-cmake \
+  mingw-w64-ucrt-x86_64-ninja mingw-w64-ucrt-x86_64-SDL2 mingw-w64-ucrt-x86_64-vulkan-headers \
+  mingw-w64-ucrt-x86_64-vulkan-loader mingw-w64-ucrt-x86_64-shaderc mingw-w64-ucrt-x86_64-zlib
+
+<span class="c"># the source</span>
+git clone https://github.com/JackyPendrag0n/ratchet-retooled.git
+cd ratchet-retooled
+
+<span class="c"># C++ from YOUR EBOOT (C:\Games\... is written /c/Games/...)</span>
+python ppu_codegen.py "/c/Games/My TOD folder/PS3_GAME/USRDIR/EBOOT.elf" gen
+python spu_codegen.py "/c/Games/My TOD folder/PS3_GAME/USRDIR/EBOOT.elf" gen_spu
+
+<span class="c"># build (add -j 2 to the second line if you run out of memory)</span>
+cmake -S . -B build -G Ninja
+cmake --build build
+
+<span class="c"># copy the DLLs next to tod.exe</span>
+ldd build/tod.exe | grep -i ucrt64 | awk '{print $3}' | xargs -I{} cp {} build/</pre>
+          <p>Copy <code>tod.exe</code> and the <code>.dll</code> files from <code>build</code> next to your game
+            folder. Visual Studio's compiler is not supported.</p>
+        </div>
+
+        <div class="pane" id="linux" hidden>
+<pre><span class="c"># Ubuntu / Debian / Mint / Pop!_OS</span>
+sudo apt install git cmake ninja-build g++ python3 libsdl2-dev libvulkan-dev libshaderc-dev zlib1g-dev
+<span class="c"># Fedora</span>
+sudo dnf install git cmake ninja-build gcc-c++ python3 SDL2-devel vulkan-loader-devel libshaderc-devel zlib-devel
+<span class="c"># Arch / Manjaro / SteamOS desktop</span>
+sudo pacman -S git cmake ninja gcc python sdl2 vulkan-icd-loader vulkan-headers shaderc zlib
+
+git clone https://github.com/JackyPendrag0n/ratchet-retooled.git
+cd ratchet-retooled
+python3 ppu_codegen.py "/path/to/My TOD folder/PS3_GAME/USRDIR/EBOOT.elf" gen
+python3 spu_codegen.py "/path/to/My TOD folder/PS3_GAME/USRDIR/EBOOT.elf" gen_spu
+cmake -S . -B build -G Ninja
+cmake --build build          <span class="c"># add -j 2 if you run out of memory</span></pre>
+          <p>Your game is <code>build/tod</code>. You need GCC 13+ or Clang 16+.</p>
+        </div>
+      </div>
+
+      <div class="step">
+        <h3>Play</h3>
+        <p>Put <code>tod</code> / <code>tod.exe</code> next to your game folder and start it. It finds the game by
+          itself and creates <code>tod-data</code> (settings, log) and <code>TOD Saves</code> beside itself.</p>
+<pre>Games/
+  My TOD folder/      <span class="c">&lt;- PS3_GAME is in here</span>
+  tod.exe             <span class="c">&lt;- plus the .dll files on Windows</span>
+  tod-data/           <span class="c">&lt;- settings.ini, caches, the log</span>
+  TOD Saves/          <span class="c">&lt;- your saves</span></pre>
+        <p>Or point it at everything yourself:
+          <code>tod "/path/to/EBOOT.elf" --game "/path/to/My TOD folder" --data ./tod-data</code></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="play" style="padding-top:0">
+  <div class="wrap">
+    <h2>Playing</h2>
+    <p class="lede">Gamepads just work. Press F1 (or L3+R3) any time for cheats and graphics settings; most changes
+      apply instantly. Everything is also in <code>tod-data/settings.ini</code>.</p>
+    <div class="two">
+      <div class="tablewrap">
+        <table>
+          <tr><th>Keyboard</th><th>PS3</th></tr>
+          <tr><td>W A S D</td><td>left stick</td></tr>
+          <tr><td>I J K L</td><td>right stick</td></tr>
+          <tr><td>arrow keys</td><td>D-pad</td></tr>
+          <tr><td>Space / C / F / R</td><td>Cross / Circle / Square / Triangle</td></tr>
+          <tr><td>Q / E &middot; 1 / 3</td><td>L1 / R1 &middot; L2 / R2</td></tr>
+          <tr><td>Enter / Tab</td><td>Start / Select</td></tr>
+          <tr><td>F1</td><td>cheat, debug and settings menu</td></tr>
+          <tr><td>F11 / F12</td><td>fullscreen / screenshot</td></tr>
+          <tr><td>F2 / F4 / F5 / F9</td><td>slow motion / photo mode / save / restore position</td></tr>
+        </table>
+      </div>
+      <div>
+        <div class="card" style="margin-bottom:16px">
+          <h3>Co-op</h3>
+          <p>Tick <i>Two players, split screen</i> in F1 &gt; Fun, or set <code>coop = true</code>. The second
+            controller is player 2 (with one controller, the keyboard is player 1). Still experimental: player 2
+            respawns can crash, and cutscenes and vehicles only know player 1.</p>
+        </div>
+        <div class="card">
+          <h3>Saves</h3>
+          <p>Each save is a <code>BCUS98127_SAVE_&lt;n&gt;</code> folder in <code>TOD Saves</code>, the same layout
+            RPCS3 uses, so you can copy saves between the two.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>Ratchet Retooled is original code: a recompiler, a runtime and tools. It contains no part of the game. Use it
+      only with a copy you own, and never share the decrypted EBOOT, the generated code or any game files.</p>
+    <p>A fan project, not affiliated with or endorsed by Sony Interactive Entertainment or Insomniac Games.
+      "Ratchet &amp; Clank" is a trademark of Sony Interactive Entertainment LLC.
+      &middot; <a href="https://github.com/JackyPendrag0n/ratchet-retooled">Source on GitHub</a></p>
+  </div>
+</footer>
+
+<div class="lightbox" id="lightbox"><img alt=""></div>
+
+<script>
+document.querySelectorAll('.tab').forEach(function (tab) {
+  tab.addEventListener('click', function () {
+    document.querySelectorAll('.tab').forEach(function (t) { t.setAttribute('aria-selected', t === tab); });
+    document.querySelectorAll('.pane').forEach(function (p) { p.hidden = p.id !== tab.dataset.pane; });
+  });
+});
+if (/Linux|X11/.test(navigator.userAgent) && !/Android/.test(navigator.userAgent)) {
+  document.querySelector('.tab[data-pane="linux"]').click();
+}
+var lb = document.getElementById('lightbox');
+document.querySelectorAll('.shots img').forEach(function (img) {
+  img.addEventListener('click', function () { lb.querySelector('img').src = img.src; lb.querySelector('img').alt = img.alt; lb.classList.add('open'); });
+});
+lb.addEventListener('click', function () { lb.classList.remove('open'); });
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') lb.classList.remove('open'); });
+</script>
+</body>
+</html>

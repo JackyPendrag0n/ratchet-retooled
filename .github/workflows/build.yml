@@ -1,0 +1,62 @@
+# Compile check of the host runtime on Linux, Windows and macOS.
+# CI cannot build the full game: the generated code comes from the decrypted EBOOT.elf of your own
+# disc, which must never be uploaded. So this builds everything else (TOD_HOST_ONLY) and checks that
+# the Python tools still parse.
+name: build
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake ninja-build g++ libsdl2-dev libvulkan-dev libshaderc-dev zlib1g-dev
+      - name: Python syntax
+        run: python3 -m py_compile ppu_codegen.py spu_codegen.py tools/*.py tools/modding/*.py
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DTOD_HOST_ONLY=ON
+      - name: Build
+        run: cmake --build build
+
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        shell: msys2 {0}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: msys2/setup-msys2@v2
+        with:
+          msystem: UCRT64
+          update: true
+          install: >-
+            mingw-w64-ucrt-x86_64-gcc
+            mingw-w64-ucrt-x86_64-cmake
+            mingw-w64-ucrt-x86_64-ninja
+            mingw-w64-ucrt-x86_64-SDL2
+            mingw-w64-ucrt-x86_64-vulkan-headers
+            mingw-w64-ucrt-x86_64-vulkan-loader
+            mingw-w64-ucrt-x86_64-shaderc
+            mingw-w64-ucrt-x86_64-zlib
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DTOD_HOST_ONLY=ON
+      - name: Build
+        run: cmake --build build
+
+  macos:
+    runs-on: macos-15-intel
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install dependencies
+        run: brew install ninja sdl2 shaderc vulkan-headers vulkan-loader molten-vk
+      - name: Configure
+        run: cmake -S . -B build -G Ninja -DTOD_HOST_ONLY=ON -DCMAKE_PREFIX_PATH="$(brew --prefix)"
+      - name: Build
+        run: cmake --build build

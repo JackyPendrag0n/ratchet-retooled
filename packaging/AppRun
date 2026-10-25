@@ -1,0 +1,166 @@
+#!/bin/bash
+# TOD-recomp launcher. Contains only the recompiled program; the game files come from
+# your own copy of Ratchet & Clank Future: Tools of Destruction (BCUS98127, v1.00).
+# Double-click to run: the game folder and decrypted EBOOT.elf are found automatically
+# (next to the AppImage, in your home folder, on mounted drives) and remembered.
+HERE="$(dirname "$(readlink -f "$0")")"
+export LD_LIBRARY_PATH="$HERE/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+ELF_SIZE=10923400
+CONF_DIR="${XDG_CONFIG_HOME:-$HOME/.config}/tod-recomp"
+CONF="$CONF_DIR/paths"
+
+usage() {
+    cat <<USAGE
+Usage: $(basename "${APPIMAGE:-$0}") [game folder] [options]
+
+Run it with no arguments (or double-click it) and it finds the game by itself.
+  [game folder]   folder that contains PS3_GAME (or the PS3_GAME folder itself)
+  --elf <file>    decrypted EBOOT.elf ($ELF_SIZE bytes)
+  --data <dir>    settings, installs, caches and the log (default: ~/.local/share/tod-recomp)
+  --saves <dir>   save folder (default: "TOD Saves" next to this AppImage)
+  --rescan        forget the remembered paths and search again
+  --no-vsync      don't wait for vblank when presenting
+  -v              verbose log
+  --model ...     model tool (needs python3): export/import characters as glTF for Blender,
+                  e.g. --model info <game>/PS3_GAME/USRDIR/packed/levels/metropolis
+  --skin ...      skin pack tool: one model for Ratchet in every level (see the docs)
+  --docs          print where the modding notes and tools are inside this AppImage
+Controls: arrows = D-pad, WASD = left stick, IJKL = right stick, Space = Cross,
+C = Circle, F = Square, R = Triangle, Q/E = L1/R1, 1/3 = L2/R2, Enter = Start,
+Tab = Select, F11 = fullscreen, F12 = screenshot, F1 (or L3+R3) = cheat menu.
+With the cheat menu on: F2 = slow motion, F4 = photo mode, F5/F9 = save/restore position.
+Co-op (experimental): coop = true in settings.ini or F1 > Fun; the second controller is
+player 2 (with one controller, the keyboard is player 1); D-pad Down = teleport to partner.
+A connected gamepad works too (with rumble).
+Start skips in-engine cutscenes (including the new-game intro).
+If the game freezes, the log lists what every game thread is waiting on.
+USAGE
+}
+
+# Show a message in a desktop dialog when there is no terminal (double-click launch).
+say() {
+    echo "$1" >&2
+    [ -t 2 ] && return
+    if command -v zenity >/dev/null; then zenity --${2:-error} --no-wrap --title="TOD Recomp" --text="$1" 2>/dev/null
+    elif command -v kdialog >/dev/null; then kdialog --title "TOD Recomp" --${2:-error} "$1" 2>/dev/null
+    elif command -v notify-send >/dev/null; then notify-send "TOD Recomp" "$1"
+    elif command -v xmessage >/dev/null; then xmessage -center "$1"
+    fi
+}
+
+is_game_dir() { [ -d "$1/PS3_GAME/USRDIR/packed" ]; }
+is_elf() { [ -f "$1" ] && [ "$(stat -L -c %s "$1" 2>/dev/null)" = "$ELF_SIZE" ] && [ "$(head -c 4 "$1" | od -An -c | tr -d ' ')" = "177ELF" ]; }
+
+# Search a root for decrypted EBOOTs (any file of the exact size whose name mentions EBOOT,
+# including half-saved ".xdp-EBOOT.elf-XXXX" files) and for game folders.
+search() {
+    local root="$1" depth="$2"
+    [ -d "$root" ] || return
+    find "$root" -maxdepth "$depth" \( -name .cache -o -name node_modules -o -name .local -o -name proc -o -name .git -o -name .steam -o -name Trash \) -prune -o \
+        \( -type f -size ${ELF_SIZE}c -iname '*eboot*' -print \) -o \
+        \( -type d -name PS3_GAME -print \) 2>/dev/null
+}
+
+find_paths() {
+    local roots=("$(dirname "${APPIMAGE:-$0}")" "$HOME" "/run/media/$USER" "/media/$USER" "/mnt")
+    local depths=(6 7 6 6 5)
+    local hits=()
+    for i in "${!roots[@]}"; do
+        while IFS= read -r p; do hits+=("$p"); done < <(search "${roots[$i]}" "${depths[$i]}")
+        # stop early once we have both pieces
+        local g="" e=""
+        for h in "${hits[@]}"; do
+            if [ -d "$h" ]; then is_game_dir "$(dirname "$h")" && g="$(dirname "$h")"; else is_elf "$h" && e="$h"; fi
+        done
+        [ -n "$g" ] && [ -n "$e" ] && break
+    done
+    # prefer an EBOOT inside a game folder's USRDIR, then any game folder + any EBOOT
+    for h in "${hits[@]}"; do
+        if [ -f "$h" ] && is_elf "$h"; then
+            local gd; gd="$(readlink -f "$(dirname "$h")/../..")"
+            if is_game_dir "$gd"; then GAME="$gd"; ELF="$h"; return; fi
+        fi
+    done
+    for h in "${hits[@]}"; do [ -d "$h" ] && is_game_dir "$(dirname "$h")" && { GAME="${GAME:-$(readlink -f "$(dirname "$h")")}"; }; done
+    for h in "${hits[@]}"; do [ -f "$h" ] && is_elf "$h" && { ELF="${ELF:-$h}"; }; done
+}
+
+pick_folder() {
+    local msg="Choose the folder that contains PS3_GAME (Ratchet &amp; Clank Future: Tools of Destruction)."
+    if command -v zenity >/dev/null; then zenity --file-selection --directory --title="$msg" 2>/dev/null
+    elif command -v kdialog >/dev/null; then kdialog --title "TOD Recomp" --getexistingdirectory "$HOME" 2>/dev/null
+    fi
+}
+
+GAME="${TOD_GAME_DIR:-}"; ELF=""; DATA=""; SAVES=""; EXTRA=(); RESCAN=0
+while [ $# -gt 0 ]; do
+    case "$1" in
+        -h|--help) usage; exit 0 ;;
+        --model) shift; exec python3 "$HERE/usr/share/tod-recomp/tools/tod_model.py" "$@" ;;
+        --skin) shift; exec python3 "$HERE/usr/share/tod-recomp/tools/tod_skin.py" "$@" ;;
+        --docs) echo "notes: $HERE/usr/share/tod-recomp/docs (model_formats.md: formats + Blender workflow)"
+                echo "tools: $HERE/usr/share/tod-recomp/tools (copy them out with --appimage-extract)"; exit 0 ;;
+        --elf) ELF="$2"; shift 2 ;;
+        --data) DATA="$2"; shift 2 ;;
+        --saves) SAVES="$2"; shift 2 ;;
+        --rescan) RESCAN=1; shift ;;
+        -*) EXTRA+=("$1"); shift ;;
+        *) GAME="$1"; shift ;;
+    esac
+done
+
+# remembered paths from a previous run
+if [ "$RESCAN" = 0 ] && [ -f "$CONF" ]; then
+    while IFS='=' read -r k v; do
+        case "$k" in game) [ -z "$GAME" ] && is_game_dir "$v" && GAME="$v" ;; elf) [ -z "$ELF" ] && is_elf "$v" && ELF="$v" ;; esac
+    done < "$CONF"
+fi
+
+if [ -n "$GAME" ]; then
+    GAME="$(readlink -f "$GAME")"
+    [ ! -d "$GAME/PS3_GAME" ] && [ "$(basename "$GAME")" = "PS3_GAME" ] && GAME="$(dirname "$GAME")"
+    # an EBOOT anywhere under the given folder
+    if [ -z "$ELF" ]; then
+        while IFS= read -r p; do is_elf "$p" && { ELF="$p"; break; }; done < <(find "$GAME" -maxdepth 4 -type f -size ${ELF_SIZE}c -iname '*eboot*' 2>/dev/null)
+    fi
+fi
+if [ -z "$GAME" ] || [ -z "$ELF" ]; then
+    command -v notify-send >/dev/null && [ ! -t 2 ] && notify-send "TOD Recomp" "Looking for your game files..."
+    find_paths
+fi
+if [ -z "$GAME" ]; then
+    GAME="$(pick_folder)"
+    [ -n "$GAME" ] && [ "$(basename "$GAME")" = "PS3_GAME" ] && GAME="$(dirname "$GAME")"
+    if [ -n "$GAME" ] && [ -z "$ELF" ]; then
+        while IFS= read -r p; do is_elf "$p" && { ELF="$p"; break; }; done < <(find "$GAME" -maxdepth 4 -type f -size ${ELF_SIZE}c -iname '*eboot*' 2>/dev/null)
+    fi
+fi
+if [ -z "$GAME" ] || ! is_game_dir "$GAME"; then
+    say "Couldn't find the game. Put this AppImage next to the folder that contains PS3_GAME, or run it with the folder as an argument."
+    exit 2
+fi
+if [ -z "$ELF" ] || ! is_elf "$ELF"; then
+    say "Found the game in $GAME but no decrypted EBOOT.elf ($ELF_SIZE bytes).
+Decrypt PS3_GAME/USRDIR/EBOOT.BIN (RPCS3: Utilities > Decrypt PS3 Binaries) and save it as EBOOT.elf next to EBOOT.BIN."
+    exit 2
+fi
+ELF="$(readlink -f "$ELF")"
+mkdir -p "$CONF_DIR" && printf 'game=%s\nelf=%s\n' "$GAME" "$ELF" > "$CONF"
+
+DATA="${DATA:-${XDG_DATA_HOME:-$HOME/.local/share}/tod-recomp}"
+mkdir -p "$DATA"
+# saves: "TOD Saves" next to the AppImage (save_folder in settings.ini overrides it)
+if [ -z "$SAVES" ]; then
+    SAVES="$(dirname "$(readlink -f "${APPIMAGE:-$0}")")/TOD Saves"
+    mkdir -p "$SAVES" 2>/dev/null && [ -w "$SAVES" ] || SAVES="$DATA/saves"
+fi
+echo "game: $GAME"; echo "elf:  $ELF"; echo "data: $DATA"; echo "log:  $DATA/tod.log"
+"$HERE/usr/bin/tod" "$ELF" --game "$GAME" --data "$DATA" --saves "$SAVES" "${EXTRA[@]}" > "$DATA/tod.log" 2>&1 &
+PID=$!
+[ -t 1 ] && tail -f --pid=$PID "$DATA/tod.log" &
+wait $PID
+RC=$?
+if [ $RC -ne 0 ] && [ $RC -ne 143 ]; then
+    say "TOD Recomp stopped (exit code $RC). The log is at $DATA/tod.log"
+fi
+exit $RC

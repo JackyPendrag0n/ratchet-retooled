@@ -1,0 +1,25 @@
+# Anything derived from or belonging to the game stays out of the repository.
+gen/
+gen_spu/
+*.elf
+*.ELF
+EBOOT*
+PS3_GAME/
+PS3_DISC.SFB
+*.iso
+*.psarc
+*.bik
+*.pkg
+*.sfo
+*.SFO
+
+# builds and run-time folders
+build*/
+tod-data/
+TOD Saves/
+*.exe
+*.dll
+*.AppImage
+__pycache__/
+*.pyc
+.DS_Store
