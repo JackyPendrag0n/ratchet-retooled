@@ -87,11 +87,17 @@ static void load_elf(const std::string& path) {
     std::ifstream f(path, std::ios::binary);
     std::vector<u8> elf((std::istreambuf_iterator<char>(f)), {});
     if (elf.size() != 10923400)
-        throw std::runtime_error("EBOOT.elf is " + std::to_string(elf.size()) + " bytes, not the decrypted BCUS98127 01.00 build (10923400 bytes)");
+        throw std::runtime_error("EBOOT.elf is " + std::to_string(elf.size()) + " bytes, not the decrypted BCUS98127 02.00 build (10923400 bytes)."
+                                 " The v1.00 disc and game updates are not supported.");
     // the generated code only works with the exact EBOOT it was made from
     static const char* kExpected = "0ee9a8414c8fc182bc19fa2a523e6d050d0be76138b3733ae515798d77d2468c";
-    if (const std::string sum = sha256_hex(elf); sum != kExpected)
-        throw std::runtime_error("EBOOT.elf (" + path + ") is not the expected BCUS98127 01.00 build: SHA-256 " + sum +
+    static const char* kDiscV100 = "b04e0fb3f50311461316b1609bcf08ae889551a94d4262922fe1b57f3386a23b";
+    const std::string sum = sha256_hex(elf);
+    if (sum == kDiscV100)
+        throw std::runtime_error("EBOOT.elf (" + path + ") is from the v1.00 disc. Only the v2.00 disc (PARAM.SFO VERSION 02.00) "
+                                 "is supported: the recompiled code is tied to that EBOOT.");
+    if (sum != kExpected)
+        throw std::runtime_error("EBOOT.elf (" + path + ") is not the expected BCUS98127 02.00 build: SHA-256 " + sum +
                                  ", expected " + kExpected + ". Decrypt the disc's PS3_GAME/USRDIR/EBOOT.BIN again with RPCS3.");
     auto be = [&](size_t o, int n) { u64 v = 0; for (int i = 0; i < n; ++i) v = v << 8 | elf[o + i]; return v; };
     for (int i = 0; i < 8; ++i) {

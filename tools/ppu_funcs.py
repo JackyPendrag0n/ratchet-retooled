@@ -37,7 +37,7 @@ class Image:
     def __init__(self, path):
         self.d = Path(path).read_bytes()
         if hashlib.sha256(self.d).hexdigest() != EXPECTED:
-            raise SystemExit('EBOOT.elf SHA-256 differs from the pinned BCUS98127 01.00 build')
+            raise SystemExit('EBOOT.elf SHA-256 differs from the pinned BCUS98127 02.00 build')
         phoff, = struct.unpack_from('>Q', self.d, 0x20)
         phn, = struct.unpack_from('>H', self.d, 0x38)
         self.segs = []
@@ -532,7 +532,7 @@ def main():
         [dict(start=hex(h[0]), end=hex(h[1]), code_words=h[3], pad_words=h[2]) for h in code_holes], indent=1) + '\n')
 
     # XenonRecomp-style switch table file, as a starting point for a PPU recompiler config.
-    lines = ['# Switch tables for BCUS98127 01.00 EBOOT.elf, XenonRecomp-style layout.',
+    lines = ['# Switch tables for BCUS98127 02.00 EBOOT.elf, XenonRecomp-style layout.',
              '# base = bctr address; labels = case targets in index order; default = bound-check target.',
              '# r = unscaled index register at the x4 shift. The compiler often reuses it before the',
              '# bctr, so a recompiler should dispatch on the CTR value (target address), not on r.',

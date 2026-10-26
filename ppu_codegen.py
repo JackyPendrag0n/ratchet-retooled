@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PPU -> C++ static recompiler for BCUS98127 01.00 EBOOT.elf.
+"""PPU -> C++ static recompiler for BCUS98127 02.00 EBOOT.elf.
 
 Uses the whole-binary analysis in ppu_funcs.py (function boundaries, jump tables,
 EH landing pads) and emits one C++ function per guest entry point.

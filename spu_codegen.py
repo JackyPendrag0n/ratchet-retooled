@@ -128,7 +128,7 @@ def emit_terminator(name, w, k):
 
 def load_regions(elf):
     if hashlib.sha256(elf).hexdigest()[:8] != EBOOT_SHA256:
-        raise SystemExit('EBOOT.elf does not match BCUS98127 01.00')
+        raise SystemExit('EBOOT.elf does not match BCUS98127 02.00')
     phoff = struct.unpack('>Q', elf[0x20:0x28])[0]
     phnum = struct.unpack('>H', elf[0x38:0x3a])[0]
     segs = []

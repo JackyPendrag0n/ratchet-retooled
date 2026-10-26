@@ -24,7 +24,7 @@ graphics chip. There is no emulator inside and no JIT.
 
 > [!IMPORTANT]
 > **This repository contains no game code and no game files.** To play, you need your own copy of the game
-> (the North American disc, BCUS98127, v1.00), dumped from your own disc. The build turns *your* copy's program
+> (the North American disc, BCUS98127, v2.00), dumped from your own disc. The build turns *your* copy's program
 > into C++ on your own computer. Never share that generated code, the decrypted EBOOT, or any game files.
 
 ## Features
@@ -70,7 +70,8 @@ You need two things from your own disc.
    choose *Utilities > Decrypt PS3 Binaries*, pick `EBOOT.BIN`, and save the result as `EBOOT.elf` in the same
    folder.
 
-   It must be the **v1.00 disc EBOOT**, not one from a game update. Check it:
+   It must be the **v2.00 disc EBOOT** (the disc's `PARAM.SFO` says `VERSION 02.00`). The v1.00 disc and
+   game updates have different EBOOTs and will not work. Check it:
    10,923,400 bytes, SHA-256 `0ee9a8414c8fc182bc19fa2a523e6d050d0be76138b3733ae515798d77d2468c`.
 
 You don't need to install the game in RPCS3. Your folder should look like this:
@@ -261,7 +262,8 @@ Please only share mods made of your own work, and never share files taken from t
 - Co-op is experimental (see above).
 - macOS is untested. It needs an Intel build under Rosetta 2 and MoltenVK; see
   [docs/TECHNICAL.md](docs/TECHNICAL.md).
-- Only the North American v1.00 disc (BCUS98127) is supported.
+- Only the North American v2.00 disc (BCUS98127) is supported. The v1.00 disc has a different EBOOT, and the
+  recompiled code is tied to the exact EBOOT it was generated from.
 
 ## How it works
 
