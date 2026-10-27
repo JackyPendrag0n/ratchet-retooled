@@ -1,6 +1,6 @@
 #!/bin/bash
 # TOD-recomp launcher. Contains only the recompiled program; the game files come from
-# your own copy of Ratchet & Clank Future: Tools of Destruction (BCUS98127, v1.00).
+# your own copy of Ratchet & Clank Future: Tools of Destruction (BCUS98127, v2.00).
 # Double-click to run: the game folder and decrypted EBOOT.elf are found automatically
 # (next to the AppImage, in your home folder, on mounted drives) and remembered.
 HERE="$(dirname "$(readlink -f "$0")")"

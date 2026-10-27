@@ -1,4 +1,4 @@
-# PPU static recompiler (BCUS98127 01.00)
+# PPU static recompiler (BCUS98127 02.00)
 
 Turns the whole decrypted `EBOOT.elf` into C++: one function per guest entry point
 (23,910 functions + 2,334 TOC trampolines + 118 import stubs, ~2.11M instructions).

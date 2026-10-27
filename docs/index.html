@@ -175,7 +175,7 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 48px; color: var(--m
       it into an ordinary PC program. A small runtime stands in for the PS3's system libraries, and a Vulkan renderer
       draws what the PS3's graphics chip would have. No emulator, no JIT.</p>
     <div class="notice"><b>Bring your own disc.</b> This project contains no game code or game files. You need your
-      own copy of <i>Ratchet &amp; Clank Future: Tools of Destruction</i> (North America, BCUS98127, v1.00), dumped
+      own copy of <i>Ratchet &amp; Clank Future: Tools of Destruction</i> (North America, BCUS98127, v2.00), dumped
       from your own disc. The build turns your copy into C++ on your own computer.</div>
   </div>
 </section>
@@ -229,7 +229,7 @@ footer { border-top: 1px solid var(--line); padding: 32px 0 48px; color: var(--m
             <i>Utilities &gt; Decrypt PS3 Binaries</i>, pick <code>PS3_GAME/USRDIR/EBOOT.BIN</code>, and save the
             result as <code>EBOOT.elf</code> in the same folder.</li>
         </ol>
-        <p>It must be the v1.00 disc EBOOT, not an update: 10,923,400 bytes, SHA-256
+        <p>It must be the v2.00 disc EBOOT (<code>PARAM.SFO</code> says version 02.00); the v1.00 disc and game updates will not work. Check it: 10,923,400 bytes, SHA-256
           <code style="word-break:break-all">0ee9a8414c8fc182bc19fa2a523e6d050d0be76138b3733ae515798d77d2468c</code>.</p>
 <pre>My TOD folder/
   PS3_GAME/
