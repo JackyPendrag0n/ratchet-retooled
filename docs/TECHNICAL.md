@@ -381,7 +381,7 @@ conversion; textures are decoded on the render thread.
 - `resolution_scale = 1..4` (or `TOD_RES_SCALE`) renders surfaces at that multiple; the fragment shader
   divides gl_FragCoord by it where the game's shaders read pixel positions.
 - Debug env: `TOD_VKN_SYNC=1` (no render thread), `TOD_VKN_CHECK=1` (verify ring copies),
-  `TOD_VKN_REHASH=1`, `TOD_VKN_NOCACHE=1`, `TOD_VKN_NODRAW=1` (CPU-side benchmark), `TOD_VKN_SURFSIG=1`.
+  `TOD_VKN_REHASH=1`, `TOD_VKN_NOCACHE=1`, `TOD_VKN_NODRAW=1` (CPU-side benchmark; `!nodraw 1` / `!nodraw 0` in lua_commands.txt toggles the same while the game runs), `TOD_VKN_SURFSIG=1`.
 - Shadow maps: a depth texture format with a depth function (ADDRESS bits 28-31) strictly between NEVER and ALWAYS
   samples as `sampler2DShadow` with a compare sampler (RSX compares texel OP reference, so the ordered functions are
   swapped for Vulkan; outside a clamped-to-border map reads as unshadowed). The game renders its per-object shadow

@@ -11,6 +11,7 @@
 #include <io.h>
 #include <direct.h>
 #endif
+#include <algorithm>
 #include <cerrno>
 #include <filesystem>
 #include <set>
@@ -152,12 +153,50 @@ u32 fs_open(u32 path_ea, s32 flags, u32 fd_ptr) {
     return CELL_OK;
 }
 
+// The guest buffer [buf, buf+n) must lie inside the 4 GB guest space; a bad size from the game
+// fails the call instead of reading or writing past the reservation.
+bool guest_range_ok(u32 buf, u64 n) { return n <= 0x100000000ull - buf; }
+
+// read()/write() may move less than asked (a signal, a large count, Windows' 32-bit counts):
+// repeat until all is moved, the file ends, or an error.
+constexpr u64 kIoChunk = 1u << 30;
+s64 read_all(int fd, u8* p, u64 n) {
+    u64 done = 0;
+    while (done < n) {
+        const ssize_t r = ::read(fd, p + done, unsigned(std::min(n - done, kIoChunk)));
+        if (r < 0 && errno == EINTR) continue;
+        if (r < 0) return done ? s64(done) : -1;
+        if (r == 0) break;
+        done += u64(r);
+    }
+    return s64(done);
+}
+s64 write_all(int fd, const u8* p, u64 n) {
+    u64 done = 0;
+    while (done < n) {
+        const ssize_t r = ::write(fd, p + done, unsigned(std::min(n - done, kIoChunk)));
+        if (r < 0 && errno == EINTR) continue;
+        if (r <= 0) return done ? s64(done) : -1;
+        done += u64(r);
+    }
+    return s64(done);
+}
+// 64-bit offsets everywhere (Windows' lseek and off_t are 32-bit)
+s64 seek64(int fd, s64 off, int whence) {
+#ifdef _WIN32
+    return _lseeki64(fd, off, whence);
+#else
+    return s64(::lseek(fd, off_t(off), whence));
+#endif
+}
+
 u32 fs_read(u32 id, u32 buf, u64 n, u32 nread_ptr) {
     FileObj f;
     if (!get_file(id, f) || f.fd < 0) return CELL_EBADF;
+    if (!guest_range_ok(buf, n)) { LOG_NOTE("fs: read of 0x%llx bytes to 0x%08x is outside guest memory", (unsigned long long)n, buf); return CELL_EFAULT; }
     static const bool trace = std::getenv("TOD_FS_TRACE") != nullptr;
-    const off_t at = trace ? ::lseek(f.fd, 0, SEEK_CUR) : 0;
-    const ssize_t r = ::read(f.fd, mem::base + buf, n);
+    const s64 at = trace ? seek64(f.fd, 0, SEEK_CUR) : 0;
+    const s64 r = read_all(f.fd, mem::base + buf, n);
     if (r < 0) return map_errno(errno);
     if (trace) LOG_NOTE("fs: read %s at 0x%llx: 0x%llx bytes to 0x%08x", f.path.c_str(), (unsigned long long)at, (unsigned long long)r, buf);
     if (nread_ptr) st64(mem::base, nread_ptr, r);
@@ -166,7 +205,8 @@ u32 fs_read(u32 id, u32 buf, u64 n, u32 nread_ptr) {
 u32 fs_write(u32 id, u32 buf, u64 n, u32 nwrite_ptr) {
     FileObj f;
     if (!get_file(id, f) || f.fd < 0) return CELL_EBADF;
-    const ssize_t r = ::write(f.fd, mem::base + buf, n);
+    if (!guest_range_ok(buf, n)) { LOG_NOTE("fs: write of 0x%llx bytes from 0x%08x is outside guest memory", (unsigned long long)n, buf); return CELL_EFAULT; }
+    const s64 r = write_all(f.fd, mem::base + buf, n);
     if (r < 0) return map_errno(errno);
     if (nwrite_ptr) st64(mem::base, nwrite_ptr, r);
     return CELL_OK;
@@ -182,7 +222,8 @@ u32 fs_close(u32 id) {
 u32 fs_lseek(u32 id, s64 off, s32 whence, u32 pos_ptr) {
     FileObj f;
     if (!get_file(id, f) || f.fd < 0) return CELL_EBADF;
-    const off_t r = ::lseek(f.fd, off, whence == 0 ? SEEK_SET : whence == 1 ? SEEK_CUR : SEEK_END);
+    if (whence < 0 || whence > 2) return CELL_EINVAL;
+    const s64 r = seek64(f.fd, off, whence == 0 ? SEEK_SET : whence == 1 ? SEEK_CUR : SEEK_END);
     if (r < 0) return CELL_EINVAL;
     if (pos_ptr) st64(mem::base, pos_ptr, r);
     return CELL_OK;
