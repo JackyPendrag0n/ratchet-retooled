@@ -758,7 +758,9 @@ void Capture::draw() {
         const u32 f = reg(0x1740 + 4 * i), o = reg(0x1680 + 4 * i);
         const u32 type = f & 0xf, size = (f >> 4) & 0xf, stride = (f >> 8) & 0xff, divider = f >> 16;
         if (!type || !size) continue;
-        const u32 ea = address((o & 0x7fffffff) + base_offset, o >> 31);
+        // the RSX adds the base offset and keeps 28 bits (RPCS3 get_vertex_offset_from_base): Metropolis' moss
+        // layer has its vertex colours past the end of local memory before the wrap, and lost them (blue moss)
+        const u32 ea = address((o + base_offset) & 0x0fffffff, o >> 31);
         if (ea == ~0u) continue;
         const u32 eb = vertex_type_bytes(type, size);
         if (!eb) continue;

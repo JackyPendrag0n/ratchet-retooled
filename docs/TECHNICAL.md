@@ -351,6 +351,9 @@ Status: New Game reaches Kerwan and plays, with NextSynth audio and Bink movies 
   vertices, so long strips and lists arrive split; drawing the pieces separately broke skinned characters).
 - Surfaces are keyed by address and format, so passes that alternate formats at one address keep both.
 - Main-memory offsets ignore bit 31 (Bink sets it on its YUV plane textures).
+- Vertex array offsets: offset + SET_VERTEX_DATA_BASE_OFFSET is kept to 28 bits, as on the RSX. Metropolis' moss
+  and trim layers keep their vertex colours past the end of local memory before that wrap; dropping them left the
+  colour at its default (0, 0, 1), the blue/purple moss.
 - Texture reads apply the RSX format conversions the game relies on (`FpKey::tex_gamma` / `tex_expand`): sRGB
   decode for ADDRESS gamma bits (the env/reflection cube maps) and signed expansion for UNSIGNED_REMAP = BIASED
   (normal maps; the game never uses bx2). Without them the image was blown out. The sRGB framebuffer switch
