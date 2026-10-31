@@ -356,6 +356,21 @@ bool find_game_next_to_exe(std::string& saves_arg) {
     return true;
 }
 
+// A disc copy missing files the game reads at boot fails later in odd ways (a memory fault while
+// loading, "Auto-save failed"); name the missing files up front instead.
+void check_game_files() {
+    namespace fs = std::filesystem;
+    std::error_code ec;
+    fs::path usr = fs::path(g_config.game_dir) / "PS3_GAME" / "USRDIR";
+    if (!fs::is_directory(usr, ec)) usr = fs::path(g_config.game_dir) / "USRDIR";  // --game pointing at PS3_GAME itself
+    std::string missing;
+    for (const char* f : {"EBOOT.BIN", "packed/game/game.psarc", "packed/game/global_cached.psarc", "packed/game/global_uncached.psarc"})
+        if (!fs::is_regular_file(usr / f, ec)) missing += std::string("\n  ") + (usr / f).string();
+    if (!missing.empty())
+        std::cerr << "Warning: these game files are missing, so the game may crash or fail to save:" << missing
+                  << "\nCopy the whole PS3_GAME folder from your disc dump.\n";
+}
+
 int run(int argc, char** argv);
 
 int main(int argc, char** argv) {
@@ -398,6 +413,7 @@ int run(int argc, char** argv) {
     plat::log_to_file(g_config.data_dir + "/tod.log");
     std::filesystem::create_directories(g_config.data_dir + "/dev_hdd1");
     load_settings(vsync);
+    check_game_files();
     // save_folder in settings.ini, else --saves (the AppImage passes "TOD Saves" next to itself), else <data>/saves
     if (g_config.save_dir.empty()) g_config.save_dir = saves_arg.empty() ? g_config.data_dir + "/saves" : saves_arg;
     prepare_save_dir();

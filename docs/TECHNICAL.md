@@ -351,6 +351,9 @@ Status: New Game reaches Kerwan and plays, with NextSynth audio and Bink movies 
   vertices, so long strips and lists arrive split; drawing the pieces separately broke skinned characters).
 - Surfaces are keyed by address and format, so passes that alternate formats at one address keep both.
 - Main-memory offsets ignore bit 31 (Bink sets it on its YUV plane textures).
+- Vertex array offsets: offset + SET_VERTEX_DATA_BASE_OFFSET is kept to 28 bits, as on the RSX. Metropolis' moss
+  and trim layers keep their vertex colours past the end of local memory before that wrap; dropping them left the
+  colour at its default (0, 0, 1), the blue/purple moss.
 - Texture reads apply the RSX format conversions the game relies on (`FpKey::tex_gamma` / `tex_expand`): sRGB
   decode for ADDRESS gamma bits (the env/reflection cube maps) and signed expansion for UNSIGNED_REMAP = BIASED
   (normal maps; the game never uses bx2). Without them the image was blown out. The sRGB framebuffer switch
@@ -381,7 +384,7 @@ conversion; textures are decoded on the render thread.
 - `resolution_scale = 1..4` (or `TOD_RES_SCALE`) renders surfaces at that multiple; the fragment shader
   divides gl_FragCoord by it where the game's shaders read pixel positions.
 - Debug env: `TOD_VKN_SYNC=1` (no render thread), `TOD_VKN_CHECK=1` (verify ring copies),
-  `TOD_VKN_REHASH=1`, `TOD_VKN_NOCACHE=1`, `TOD_VKN_NODRAW=1` (CPU-side benchmark), `TOD_VKN_SURFSIG=1`.
+  `TOD_VKN_REHASH=1`, `TOD_VKN_NOCACHE=1`, `TOD_VKN_NODRAW=1` (CPU-side benchmark; `!nodraw 1` / `!nodraw 0` in lua_commands.txt toggles the same while the game runs), `TOD_VKN_SURFSIG=1`.
 - Shadow maps: a depth texture format with a depth function (ADDRESS bits 28-31) strictly between NEVER and ALWAYS
   samples as `sampler2DShadow` with a compare sampler (RSX compares texel OP reference, so the ordered functions are
   swapped for Vulkan; outside a clamped-to-border map reads as unshadowed). The game renders its per-object shadow

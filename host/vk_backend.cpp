@@ -1282,7 +1282,9 @@ void VkRenderer::draw() {
         a.type = f & 0xf; a.size = (f >> 4) & 0xf; a.stride = (f >> 8) & 0xff; a.divider = f >> 16;
         a.modulo = (freq_ops >> i) & 1;
         if (a.size && a.type && !immediate) {
-            a.ea = address((o & 0x7fffffff) + base_offset, o >> 31);
+            // the RSX adds the base offset and keeps 28 bits (RPCS3 get_vertex_offset_from_base): Metropolis' moss
+            // layer has its vertex colours past the end of local memory before the wrap, and lost them (blue moss)
+            a.ea = address((o + base_offset) & 0x0fffffff, o >> 31);
             if (a.ea != ~0u) { a.kind = 1; continue; }
         }
         a.kind = 0;

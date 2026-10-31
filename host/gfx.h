@@ -25,6 +25,7 @@ struct Options {
     std::atomic<unsigned> dump_vps{0};     // debugging (!dumpvp <hex>): log the vertex constants of the next such draw in each view
     std::atomic<unsigned> dump_idx{0};    // debugging (!dumpidx <hex>, with TOD_DRAW_TRACE): log the vertex constants of the first draw from this index address in each view
     std::atomic<unsigned> skip_from{0}, skip_to{0};   // debugging (!skipdraws a b): drop the right view's draws a..b-1 of each frame
+    std::atomic<bool> no_draw{false};      // debugging (!nodraw 0|1, or TOD_VKN_NODRAW): record no draws, to move fast on a software GPU
 };
 extern Options g;
 

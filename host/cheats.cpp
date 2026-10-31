@@ -224,6 +224,7 @@ void poll_command_file() {
         else if (op == "savepos") save_position();
         else if (op == "loadpos") restore_position();
         else if (op == "shot") gfx::g.screenshot = true;
+        else if (op == "nodraw") gfx::g.no_draw = a != 0;
         else if (op == "shotsurf") { u32 ea = 0; std::stringstream(text.substr(10)) >> std::hex >> ea; gfx::g.shot_surf = ea; }
         else if (op == "skipdraws") { gfx::g.skip_from = unsigned(a); gfx::g.skip_to = unsigned(b); }
         else if (op == "dumpidx") { unsigned h = 0; std::stringstream(text.substr(9)) >> std::hex >> h; gfx::g.dump_idx = h; }

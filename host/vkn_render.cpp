@@ -1605,8 +1605,8 @@ void RenderThread::do_draw(const DrawPacket& d, const DrawRange2* ranges) {
     }
     if (dyn_.bias_en == 0 && dyn_.bias[0] == -1) { vkCmdSetDepthBias(cb, 0.f, 0.f, 0.f); dyn_.bias[0] = dyn_.bias[1] = 0.f; }
 
-    static const bool no_draw = std::getenv("TOD_VKN_NODRAW") != nullptr;  // CPU-side benchmarking on software GPUs
-    if (no_draw) {
+    static const bool no_draw_env = std::getenv("TOD_VKN_NODRAW") != nullptr;  // CPU-side benchmarking on software GPUs
+    if (no_draw_env || gfx::g.no_draw.load(std::memory_order_relaxed)) {
     } else if (d.flags & DF_INDEXED) {
         vkCmdBindIndexBuffer(cb, ring_.buf, d.index_off, d.index_type == 1 ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32);
         for (u32 i = 0; i < d.nranges; ++i)
